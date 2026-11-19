@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font: 13px system-ui, sans-serif; width: 230px; margin: 12px; }
+    h1 { font-size: 14px; margin: 0 0 10px; }
+    label { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+    button { margin-top: 10px; width: 100%; }
+    #status { color: #57606a; margin-top: 6px; min-height: 1em; }
+  </style>
+</head>
+<body>
+  <h1>GitHub Display Names</h1>
+  <label><input type="checkbox" id="enabled"> Show profile names</label>
+  <label><input type="checkbox" id="showLogin"> Also show username</label>
+  <button id="clear">Clear name cache</button>
+  <div id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
