@@ -12,6 +12,8 @@ Works in Chrome, Edge, Brave and other Chromium browsers. It isn't on the Chrome
 5. Click **Load unpacked** and select the `github-names-chrome` folder (the one that contains `manifest.json`).
 6. Open any GitHub page. Pin the extension from the puzzle-piece menu to reach its settings.
 
+**Linux (.crx):** Chrome on Linux can also install the signed `github-names-chrome-vX.Y.Z.crx` from the release: drag it onto `chrome://extensions` with Developer mode on. Chrome on Windows and Mac blocks `.crx` files that aren't from the Web Store, so use the zip steps above there.
+
 **Update:** download the new zip, replace the folder's contents, then click the reload icon on the extension's card in `chrome://extensions`.
 
 **From source:** clone this repo and use **Load unpacked** on the repo folder.
@@ -33,4 +35,8 @@ python -m pytest tests
 Tests load the extension in headless Chromium against a mocked github.com.
 
 ## Releasing
-Bump `version` in `manifest.json`, merge to `main`, then push a matching tag (`git tag v1.1.0 && git push origin v1.1.0`). The Release workflow packages the extension and publishes the zip.
+Bump `version` in `manifest.json`, merge to `main`, then push a matching tag (`git tag v1.1.0 && git push origin v1.1.0`). The Release workflow packages the extension and publishes the zip, plus a signed `.crx` when the `CRX_KEY` repo secret is set. One-time key setup (keep `crx-key.pem` private and backed up; the extension ID is derived from it):
+```
+openssl genrsa -out crx-key.pem 2048
+gh secret set CRX_KEY -R jeb886/github-names-chrome < crx-key.pem
+```

@@ -21,7 +21,17 @@ jobs:
           mkdir -p dist/github-names-chrome
           cp -r manifest.json content.js background.js popup.html popup.js icons dist/github-names-chrome/
           cd dist && zip -r "github-names-chrome-$GITHUB_REF_NAME.zip" github-names-chrome
+      - name: Pack signed .crx
+        env:
+          CRX_KEY: ${{ secrets.CRX_KEY }}
+        run: |
+          if [ -z "$CRX_KEY" ]; then echo "::warning::CRX_KEY secret not set; skipping .crx"; exit 0; fi
+          umask 077
+          printf '%s\n' "$CRX_KEY" > "$RUNNER_TEMP/key.pem"
+          google-chrome --headless=new --no-sandbox --pack-extension="$PWD/dist/github-names-chrome" --pack-extension-key="$RUNNER_TEMP/key.pem"
+          rm "$RUNNER_TEMP/key.pem"
+          mv dist/github-names-chrome.crx "dist/github-names-chrome-$GITHUB_REF_NAME.crx"
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "dist/github-names-chrome-$GITHUB_REF_NAME.zip" --title "$GITHUB_REF_NAME" --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" dist/github-names-chrome-"$GITHUB_REF_NAME".* --title "$GITHUB_REF_NAME" --generate-notes
