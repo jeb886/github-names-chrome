@@ -157,7 +157,10 @@
   function apply(el, login, name) {
     if (!el.isConnected || el.dataset.ghdnLogin !== login) return;
     const nodes = textNodesMatching(el, login);
-    const otherText = nodes.reduce((t, n) => t.replace(n.nodeValue, ""), el.textContent);
+    const matched = new Set(nodes);
+    let otherText = "";
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n; (n = walker.nextNode()); ) if (!matched.has(n)) otherText += n.nodeValue;
     if (otherText.toLowerCase().includes(name.toLowerCase())) return;
     const label = settings.showLogin ? `${name} (${login})` : name;
     for (const node of nodes) {

@@ -19,12 +19,13 @@ PAGE = """<!doctype html><html><body>
 <a id="org" href="/acme" data-hovercard-type="organization">acme</a>
 <a id="noname" href="/noname">noname</a>
 <a id="native" href="/alice">Alice Smith (<span>alice</span>)</a>
+<a id="native2" href="/eve">eve Cooper (<span>eve</span>)</a>
 <a id="nav" href="/pricing">pricing</a>
 <pre><a id="code" href="/alice">alice</a></pre>
 <div id="dynamic"></div>
 </body></html>"""
 
-NAMES = {"alice": "Alice Smith", "alicia": "Ali", "bob": "Bob Jones", "carol": "Carol King", "dave": "Dave Lee"}
+NAMES = {"alice": "Alice Smith", "alicia": "Ali", "eve": "eve Cooper", "bob": "Bob Jones", "carol": "Carol King", "dave": "Dave Lee"}
 
 
 def hovercard(login, name):
@@ -85,6 +86,7 @@ def test_replaces_usernames(env):
     expect(page.locator("#org")).to_have_text("acme")
     expect(page.locator("#noname")).to_have_text("noname")
     expect(page.locator("#native")).to_have_text("Alice Smith (alice)")
+    expect(page.locator("#native2")).to_have_text("eve Cooper (eve)")
     expect(page.locator("#nav")).to_have_text("pricing")
     expect(page.locator("#code")).to_have_text("alice")
     expect(page.locator("#inlinecode")).to_have_text("alice")
