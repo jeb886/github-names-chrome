@@ -10,7 +10,11 @@ from playwright.sync_api import expect, sync_playwright
 EXT = str(Path(__file__).resolve().parent.parent)
 
 PAGE = """<!doctype html><html><body>
+<a id="malformed" href="/%">x</a>
 <a id="alice" href="/alice">alice</a>
+<a id="short" href="/alicia">alicia</a>
+<a id="inlinecode" href="/alice"><code>alice</code></a>
+<a id="spanlink" href="/alice"><span>alice</span></a>
 <a id="bob" href="/acme/repo/commits?author=bob" data-hovercard-url="/users/bob/hovercard" data-hovercard-type="user">bob</a>
 <a id="org" href="/acme" data-hovercard-type="organization">acme</a>
 <a id="noname" href="/noname">noname</a>
@@ -20,7 +24,7 @@ PAGE = """<!doctype html><html><body>
 <div id="dynamic"></div>
 </body></html>"""
 
-NAMES = {"alice": "Alice Smith", "bob": "Bob Jones", "carol": "Carol King", "dave": "Dave Lee"}
+NAMES = {"alice": "Alice Smith", "alicia": "Ali", "bob": "Bob Jones", "carol": "Carol King", "dave": "Dave Lee"}
 
 
 def hovercard(login, name):
@@ -83,6 +87,8 @@ def test_replaces_usernames(env):
     expect(page.locator("#native")).to_have_text("Alice Smith (alice)")
     expect(page.locator("#nav")).to_have_text("pricing")
     expect(page.locator("#code")).to_have_text("alice")
+    expect(page.locator("#inlinecode")).to_have_text("alice")
+    expect(page.locator("#short")).to_have_text("Ali")
     assert gh.hits["pricing"] == 0 and gh.hits["acme"] == 0
 
 
@@ -101,11 +107,15 @@ def test_handles_reused_and_added_links(env):
         const a = document.querySelector('#alice');
         a.setAttribute('href', '/dave');
         a.firstChild.nodeValue = 'dave';
-        document.querySelector('#dynamic').innerHTML = '<a id="added" href="/bob">bob</a>';
+        document.querySelector('#dynamic').innerHTML = '<a id="added" href="/bob">bob</a><a id="late" href="/bob"></a>';
+        document.querySelector('#spanlink').replaceChildren(Object.assign(document.createElement('span'), {textContent: 'alice'}));
     }""")
     expect(page.locator("#alice")).to_have_text("Dave Lee")
     expect(page.locator("#alice")).to_have_attribute("title", "@dave")
     expect(page.locator("#added")).to_have_text("Bob Jones")
+    expect(page.locator("#spanlink")).to_have_text("Alice Smith")
+    page.evaluate("document.querySelector('#late').append('bob')")
+    expect(page.locator("#late")).to_have_text("Bob Jones")
 
 
 def test_pauses_after_rate_limit(env):

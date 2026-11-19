@@ -28,6 +28,8 @@
 
   const keyFor = (login) => KEY_PREFIX + login.toLowerCase();
 
+  const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
+
   const getLogin = (text) => {
     const m = text.trim().match(LOGIN_RE);
     return m && !RESERVED.has(m[1].toLowerCase()) ? m[1] : null;
@@ -122,27 +124,30 @@
   }
 
   function loginFor(el) {
-    if (el.closest("[contenteditable], textarea, input, pre, code")) return null;
+    if (el.closest(SKIP)) return null;
     const type = el.getAttribute("data-hovercard-type");
     if (type && type !== "user") return null;
     const hc = (el.getAttribute("data-hovercard-url") || "").match(/^\/users\/([^/]+)\/hovercard/);
-    if (hc) return getLogin(decodeURIComponent(hc[1]));
+    if (hc) return getLogin(safeDecode(hc[1]));
     const href = el.getAttribute("href");
     if (!href) return el.matches('[class*="editorLogin"]') ? getLogin(el.textContent) : null;
     let url;
     try { url = new URL(href, location.origin); } catch { return null; }
     if (url.origin !== location.origin) return null;
     const m = url.pathname.match(/^\/([^/]+)\/?$/);
-    if (m) return getLogin(decodeURIComponent(m[1]));
+    if (m) return getLogin(safeDecode(m[1]));
     const author = url.searchParams.get("author") || (url.searchParams.get("q") || "").match(/\bauthor:(\S+)/)?.[1];
     return author ? getLogin(author) : null;
   }
+
+  const SKIP = "pre, code, [contenteditable], textarea, input";
 
   function textNodesMatching(el, login) {
     const out = [];
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const lower = login.toLowerCase();
     for (let n; (n = walker.nextNode()); ) {
+      if (n.parentElement?.closest(SKIP)) continue;
       const l = getLogin(n.nodeValue);
       if (l && l.toLowerCase() === lower) out.push(n);
     }
@@ -151,9 +156,11 @@
 
   function apply(el, login, name) {
     if (!el.isConnected || el.dataset.ghdnLogin !== login) return;
-    if (el.textContent.toLowerCase().includes(name.toLowerCase())) return;
+    const nodes = textNodesMatching(el, login);
+    const otherText = nodes.reduce((t, n) => t.replace(n.nodeValue, ""), el.textContent);
+    if (otherText.toLowerCase().includes(name.toLowerCase())) return;
     const label = settings.showLogin ? `${name} (${login})` : name;
-    for (const node of textNodesMatching(el, login)) {
+    for (const node of nodes) {
       const raw = node.nodeValue;
       node.__ghdnOriginal = raw;
       node.__ghdnSet = raw.match(/^\s*/)[0] + label + raw.match(/\s*$/)[0];
@@ -196,7 +203,8 @@
   const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
       if (m.type === "childList") {
-        m.addedNodes.forEach((n) => n.nodeType === 1 ? dirty.add(n) : n.parentElement && stale.add(n.parentElement));
+        if (m.target.closest?.("[data-ghdn-login]")) stale.add(m.target);
+        else m.addedNodes.forEach((n) => dirty.add(n.nodeType === 1 ? n : m.target));
       } else if (m.type === "attributes") {
         stale.add(m.target);
       } else if (m.type === "characterData" && m.target.nodeValue !== written.get(m.target)) {
